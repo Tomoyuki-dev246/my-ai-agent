@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "~6.13.2",
+    "@aws-cdk/aws-bedrock-agentcore-alpha": "^2.268.0-alpha.0",
     "aws-amplify": "~6.15.10",
+    "deploy-time-build": "^0.4.10",
     "react": "~18.3.1",
     "react-dom": "~18.3.1",
     "react-markdown": "^10.1.0"
@@ -26,6 +28,7 @@
     "@eslint/compat": "~2.0.1",
     "@eslint/eslintrc": "~3.3.3",
     "@eslint/js": "~9.39.2",
+    "@types/node": "^26.4.1",
     "@types/react": "~18.3.27",
     "@types/react-dom": "~18.3.7",
     "@typescript-eslint/eslint-plugin": "~8.53.0",
