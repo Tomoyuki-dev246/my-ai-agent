@@ -121,38 +121,28 @@ function App() {
         }
       }
     }
-        // 入力内容から金額を取得
-    const amountMatch = userMessage.content.match(/([0-9,]+)\s*円/);
+    // AIが返した家計簿データを取得
+    const expenseMatch = buffer.match(
+      /<EXPENSE>\s*(\{[\s\S]*?\})\s*<\/EXPENSE>/
+    );
 
-    if (amountMatch) {
-      const amount = Number(amountMatch[1].replace(/,/g, ''));
+    if (expenseMatch) {
+      try {
+        const expense = JSON.parse(expenseMatch[1]);
 
-      // 簡易的なカテゴリ判定
-      let category = '';
-
-      if (
-        userMessage.content.includes('野菜') ||
-        userMessage.content.includes('肉') ||
-        userMessage.content.includes('魚') ||
-        userMessage.content.includes('米') ||
-        userMessage.content.includes('食材') ||
-        userMessage.content.includes('ご飯')
-      ) {
-        category = '食費';
-      }
-
-      if (category) {
         await fetch(GAS_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'text/plain;charset=utf-8',
           },
           body: JSON.stringify({
-            person: '友介',
-            category: category,
-            amount: amount,
+            person: expense.person,
+            category: expense.category,
+            amount: expense.amount,
           }),
         });
+      } catch (error) {
+        console.error('家計簿登録エラー:', error);
       }
     }
     // AIの返答の最後に「だじょ」を付ける
