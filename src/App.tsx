@@ -112,9 +112,22 @@ function App() {
           } else {
             // 通常のテキスト蓄積（ストリーミング表示）
             buffer += event.data;
+
+            // 家計簿用のJSON部分を画面には表示しない
+            const displayText = buffer.replace(
+              /<EXPENSE>[\s\S]*?<\/EXPENSE>/g,
+              ''
+            ).trim();
+
             setMessages(prev => {
               const msgs = [...prev];
-              msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: buffer, isToolUsing: false };
+
+              msgs[msgs.length - 1] = {
+                ...msgs[msgs.length - 1],
+                content: displayText,
+                isToolUsing: false
+              };
+
               return msgs;
             });
           }
