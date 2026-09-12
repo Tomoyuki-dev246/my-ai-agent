@@ -113,6 +113,15 @@ amount = 2980
   "amount": 数値
 }
 </EXPENSE>
+
+ユーザーが「キャンセル」「取り消し」「さっきの支出を取り消して」
+など、直前の登録を取り消したい場合は、以下の形式で出力してください。
+
+<EXPENSE>
+{
+  "action": "cancel_last"
+}
+</EXPENSE>
 """
 
     agent = Agent(

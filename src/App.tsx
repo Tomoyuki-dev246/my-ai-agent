@@ -149,6 +149,7 @@ function App() {
             'Content-Type': 'text/plain;charset=utf-8',
           },
           body: JSON.stringify({
+            action: expense.action || "add",
             person: expense.person,
             category: expense.category,
             amount: expense.amount,
