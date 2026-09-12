@@ -7,6 +7,7 @@ import outputs from '../amplify_outputs.json';
 
 // Amplify outputs から設定を取得
 const AGENT_ARN = outputs.custom?.agentRuntimeArn;
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzGSNEphft_8-LyTVsnZkIloEaU1cQCEyN5T0haMRU99irJlzLYRVkAxT_lPqz2B628/exec';
 
 // チャットメッセージの型定義
 interface Message {
@@ -118,6 +119,40 @@ function App() {
             });
           }
         }
+      }
+    }
+        // 入力内容から金額を取得
+    const amountMatch = userMessage.content.match(/([0-9,]+)\s*円/);
+
+    if (amountMatch) {
+      const amount = Number(amountMatch[1].replace(/,/g, ''));
+
+      // 簡易的なカテゴリ判定
+      let category = '';
+
+      if (
+        userMessage.content.includes('野菜') ||
+        userMessage.content.includes('肉') ||
+        userMessage.content.includes('魚') ||
+        userMessage.content.includes('米') ||
+        userMessage.content.includes('食材') ||
+        userMessage.content.includes('ご飯')
+      ) {
+        category = '食費';
+      }
+
+      if (category) {
+        await fetch(GAS_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify({
+            person: '友介',
+            category: category,
+            amount: amount,
+          }),
+        });
       }
     }
     // AIの返答の最後に「だじょ」を付ける
