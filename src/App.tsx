@@ -127,7 +127,7 @@ function App() {
   return (
     <div className="container">
       <header className="header">
-        <h1 className="title">フルサーバーレスなAIエージェントアプリ</h1>
+        <h1 className="title">みどぴ用エージェントアプリ</h1>
         <p className="subtitle">AmplifyとAgentCoreで構築しています</p>
       </header>
 
