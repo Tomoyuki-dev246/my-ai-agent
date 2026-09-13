@@ -7,7 +7,7 @@ import outputs from '../amplify_outputs.json';
 
 // Amplify outputs から設定を取得
 const AGENT_ARN = outputs.custom?.agentRuntimeArn;
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzGSNEphft_8-LyTVsnZkIloEaU1cQCEyN5T0haMRU99irJlzLYRVkAxT_lPqz2B628/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzwCOqbjwUkbry-Y5KLENR_8I8iQeNrkBVgJx-ec6RV04K4fihEEWAB1SE8PIDLn2MTiA/exec';
 
 // チャットメッセージの型定義
 interface Message {
