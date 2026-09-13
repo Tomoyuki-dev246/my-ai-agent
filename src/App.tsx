@@ -180,8 +180,8 @@ function App() {
   return (
     <div className="container">
       <header className="header">
-        <h1 className="title">みどぴ用エージェントアプリ</h1>
-        <p className="subtitle">AmplifyとAgentCoreで構築しています</p>
+        <h1 className="title">家計簿編集エージェントアプリ</h1>
+        <p className="subtitle">みどぴ使うんだじょ</p>
       </header>
 
       <div className="message-area">

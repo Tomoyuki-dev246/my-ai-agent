@@ -3,7 +3,7 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
   text-align: center;
-  padding: 16px 24px;
+  padding: 8px 24px;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 .title { font-size: 1.25rem; font-weight: 600; margin: 0; }
@@ -22,7 +22,7 @@
 .message-area {
   flex: 1;
   overflow: auto;
-  padding: 24px;
+  padding: 12px 24px;
   display: flex;
   flex-direction: column;
 }
