@@ -184,7 +184,7 @@ function App() {
         <p className="subtitle">みどぴ使うんだじょ</p>
       </header>
 
-      <div className="message-area">
+      <div className={`message-area ${messages.length === 0 ? 'empty' : ''}`}>
         <div className="message-container">
           {messages.map(msg => (
             <div key={msg.id} className={`message-row ${msg.role}`}>

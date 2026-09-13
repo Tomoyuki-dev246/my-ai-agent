@@ -22,9 +22,15 @@
 .message-area {
   flex: 1;
   overflow: auto;
-  padding: 12px 24px;
+  padding: 4px 24px;
   display: flex;
   flex-direction: column;
+}
+
+/* メッセージがまだないときは空白を詰める */
+.message-area.empty {
+  flex: 0;
+  padding: 4px 24px;
 }
 
 .message-container {
