@@ -39,6 +39,55 @@ function App() {
     // ユーザーメッセージを作成
     const userMessage: Message = { id: crypto.randomUUID(), role: 'user', content: input.trim() };
 
+    // =========================
+// キャンセル処理
+// =========================
+if (/キャンセル|取り消し|取消/.test(input.trim())) {
+  setLoading(true);
+
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+      body: JSON.stringify({
+        action: 'cancel_last',
+      }),
+    });
+
+    const result = await response.json();
+
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: result.success
+          ? '直前の取引をキャンセルしたんだじょ'
+          : `キャンセルできなかったんだじょ：${result.message}`,
+      },
+    ]);
+  } catch (error) {
+    console.error('キャンセルエラー:', error);
+
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'キャンセルに失敗したんだじょ',
+      },
+    ]);
+  }
+
+  setInput('');
+  setLoading(false);
+  return;
+}
+
     // メッセージ配列に追加（ユーザー発言 + 空のAI応答）
     setMessages(prev => [...prev, userMessage, { id: crypto.randomUUID(), role: 'assistant', content: '' }]);
     setInput('');
