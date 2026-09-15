@@ -4,76 +4,76 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
 app = BedrockAgentCoreApp()
 
+
 def convert_event(event) -> dict | None:
-"""Strandsのイベントをフロントエンド向けJSON形式に変換"""
-try:
-if not hasattr(event, 'get'):
-return None
+    """Strandsのイベントをフロントエンド向けJSON形式に変換"""
+    try:
+        if not hasattr(event, 'get'):
+            return None
 
-    inner_event = event.get('event')
+        inner_event = event.get('event')
 
-    if not inner_event:
+        if not inner_event:
+            return None
+
+        content_block_delta = inner_event.get('contentBlockDelta')
+
+        if content_block_delta:
+            delta = content_block_delta.get('delta', {})
+            text = delta.get('text')
+
+            if text:
+                return {
+                    'type': 'text',
+                    'data': text
+                }
+
+        content_block_start = inner_event.get('contentBlockStart')
+
+        if content_block_start:
+            start = content_block_start.get('start', {})
+            tool_use = start.get('toolUse')
+
+            if tool_use:
+                tool_name = tool_use.get(
+                    'name',
+                    'unknown'
+                )
+
+                return {
+                    'type': 'tool_use',
+                    'tool_name': tool_name
+                }
+
         return None
 
-    content_block_delta = inner_event.get('contentBlockDelta')
+    except Exception:
+        return None
 
-    if content_block_delta:
-        delta = content_block_delta.get('delta', {})
-        text = delta.get('text')
-
-        if text:
-            return {
-                'type': 'text',
-                'data': text
-            }
-
-    content_block_start = inner_event.get('contentBlockStart')
-
-    if content_block_start:
-        start = content_block_start.get('start', {})
-
-        tool_use = start.get('toolUse')
-
-        if tool_use:
-            tool_name = tool_use.get(
-                'name',
-                'unknown'
-            )
-
-            return {
-                'type': 'tool_use',
-                'tool_name': tool_name
-            }
-
-    return None
-
-except Exception:
-    return None
 
 @app.entrypoint
 async def invoke_agent(payload, context):
 
-prompt = payload.get("prompt", "")
+    prompt = payload.get("prompt", "")
+    history = payload.get("history", [])
 
-history = payload.get("history", [])
+    # =========================
+    # 会話履歴を文字列化
+    # =========================
 
-# =========================
-# 会話履歴を文字列化
-# =========================
+    conversation_text = ""
 
-conversation_text = ""
+    for message in history:
+        role = message.get("role", "")
+        content = message.get("content", "")
 
-for message in history:
-    role = message.get("role", "")
-    content = message.get("content", "")
+        if role == "user":
+            conversation_text += f"ユーザー: {content}\n"
 
-    if role == "user":
-        conversation_text += f"ユーザー: {content}\n"
+        elif role == "assistant":
+            conversation_text += f"アシスタント: {content}\n"
 
-    elif role == "assistant":
-        conversation_text += f"アシスタント: {content}\n"
-
-system_prompt = """
+    system_prompt = """
 
 あなたは家計簿アシスタントです。
 
@@ -81,7 +81,7 @@ system_prompt = """
 
 =========================
 家計簿登録
-=====
+=========================
 
 ユーザーの発言から、家計簿に登録すべき情報を判断してください。
 
@@ -118,7 +118,7 @@ system_prompt = """
 
 =========================
 家計簿登録例
-======
+=========================
 
 「みどぴ、野菜1000円」
 
@@ -156,7 +156,7 @@ amount = 1000
 
 =========================
 キャンセル処理
-=======
+=========================
 
 キャンセルについては、単語だけで判断してはいけません。
 
@@ -174,7 +174,7 @@ amount = 1000
 
 =========================
 キャンセルとして扱う例
-===========
+=========================
 
 「さっきの支出を取り消して」
 
@@ -193,7 +193,7 @@ cancel_lastを出力します。
 
 =========================
 キャンセルとして扱わない例
-=============
+=========================
 
 「ともぴの飲み会がキャンセルになった」
 
@@ -215,7 +215,7 @@ cancel_lastを出力します。
 
 =========================
 重要な判断ルール
-========
+=========================
 
 「キャンセル」「取り消し」「取消」という単語が含まれているだけでは、
 家計簿取引のキャンセルとは判断しないでください。
@@ -238,7 +238,7 @@ cancel_lastを出力します。
 
 =========================
 会話文脈の扱い
-=======
+=========================
 
 ユーザーの発言だけでは意味が分からない場合、
 必ず会話履歴を確認してください。
@@ -260,24 +260,23 @@ cancel_lastを出力してください。
 
 一方、
 
-ユーザー:
 「ともぴの飲み会がキャンセルになった」
 
 だけの場合は、
 家計簿取引のキャンセルとは判断しないでください。
 """
 
-agent = Agent(
-    model="jp.anthropic.claude-haiku-4-5-20251001-v1:0",
-    system_prompt=system_prompt,
-    tools=[rss]
-)
+    agent = Agent(
+        model="jp.anthropic.claude-haiku-4-5-20251001-v1:0",
+        system_prompt=system_prompt,
+        tools=[rss]
+    )
 
-# =========================
-# AIへ会話履歴＋現在の発言を渡す
-# =========================
+    # =========================
+    # AIへ会話履歴＋現在の発言を渡す
+    # =========================
 
-full_prompt = f"""
+    full_prompt = f"""
 
 以下はユーザーとの会話履歴です。
 
@@ -291,12 +290,12 @@ full_prompt = f"""
 この発言に対して、会話全体の文脈を考慮して回答してください。
 """
 
-async for event in agent.stream_async(full_prompt):
+    async for event in agent.stream_async(full_prompt):
+        converted = convert_event(event)
 
-    converted = convert_event(event)
+        if converted:
+            yield converted
 
-    if converted:
-        yield converted
 
-if **name** == "**main**":
-app.run()
+if __name__ == "__main__":
+    app.run()
