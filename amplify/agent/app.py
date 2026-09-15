@@ -10,7 +10,6 @@ try:
 if not hasattr(event, 'get'):
 return None
 
-```
     inner_event = event.get('event')
 
     if not inner_event:
@@ -50,12 +49,10 @@ return None
 
 except Exception:
     return None
-```
 
 @app.entrypoint
 async def invoke_agent(payload, context):
 
-```
 prompt = payload.get("prompt", "")
 
 history = payload.get("history", [])
@@ -77,7 +74,6 @@ for message in history:
         conversation_text += f"アシスタント: {content}\n"
 
 system_prompt = """
-```
 
 あなたは家計簿アシスタントです。
 
@@ -271,7 +267,6 @@ cancel_lastを出力してください。
 家計簿取引のキャンセルとは判断しないでください。
 """
 
-```
 agent = Agent(
     model="jp.anthropic.claude-haiku-4-5-20251001-v1:0",
     system_prompt=system_prompt,
@@ -283,7 +278,6 @@ agent = Agent(
 # =========================
 
 full_prompt = f"""
-```
 
 以下はユーザーとの会話履歴です。
 
@@ -297,14 +291,12 @@ full_prompt = f"""
 この発言に対して、会話全体の文脈を考慮して回答してください。
 """
 
-```
 async for event in agent.stream_async(full_prompt):
 
     converted = convert_event(event)
 
     if converted:
         yield converted
-```
 
 if **name** == "**main**":
 app.run()

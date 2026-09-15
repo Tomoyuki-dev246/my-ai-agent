@@ -347,15 +347,19 @@ try {
 } catch (error) {
   console.error('AIチャットエラー:', error);
 
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : String(error);
+
   setMessages((prev) => {
     const msgs = [...prev];
-
     const last = msgs[msgs.length - 1];
 
     if (last && last.role === 'assistant') {
       msgs[msgs.length - 1] = {
         ...last,
-        content: 'AIとの通信に失敗したんだじょ',
+        content: `AIとの通信に失敗したんだじょ\n\nエラー: ${errorMessage}`,
       };
     }
 
@@ -369,7 +373,6 @@ try {
 
 return ( <div className="container"> <header className="header"> <h1 className="title">家計簿編集エージェントアプリ</h1>
 
-```
     <p className="subtitle">みどぴ使うんだじょ</p>
   </header>
 
