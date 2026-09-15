@@ -43,7 +43,6 @@ messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 const handleSubmit = async (e: FormEvent) => {
 e.preventDefault();
 
-```
 if (!input.trim() || loading) return;
 
 const userText = input.trim();
