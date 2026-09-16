@@ -1,14 +1,29 @@
-import { useState, useRef, useEffect, type FormEvent } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  type FormEvent,
+} from 'react';
+
 import { fetchAuthSession } from 'aws-amplify/auth';
 import ReactMarkdown from 'react-markdown';
+
 import './App.css';
 
 import outputs from '../amplify_outputs.json';
+
+// =========================================================
+// 設定
+// =========================================================
 
 const AGENT_ARN = outputs.custom?.agentRuntimeArn;
 
 const GAS_URL =
   'https://script.google.com/macros/s/AKfycbzwCOqbjwUkbry-Y5KLENR_8I8iQeNrkBVgJx-ec6RV04K4fihEEWAB1SE8PIDLn2MTiA/exec';
+
+// =========================================================
+// 型定義
+// =========================================================
 
 interface Message {
   id: string;
@@ -24,13 +39,25 @@ interface ChatMessage {
   content: string;
 }
 
+// =========================================================
+// App
+// =========================================================
+
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [chatHistory, setChatHistory] = useState<
+    ChatMessage[]
+  >([]);
+
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef =
+    useRef<HTMLDivElement>(null);
+
+  // =======================================================
+  // メッセージ最下部へスクロール
+  // =======================================================
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
@@ -38,19 +65,30 @@ function App() {
     });
   }, [messages]);
 
-  // =========================================================
-  // AgentCoreへ送信
-  // =========================================================
+  // =======================================================
+  // AgentCoreへメッセージ送信
+  // =======================================================
+
   const sendMessage = async (text: string) => {
     const userText = text.trim();
 
-    if (!userText || loading) return;
+    if (!userText || loading) {
+      return;
+    }
+
+    // =====================================================
+    // ユーザーメッセージ
+    // =====================================================
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
       content: userText,
     };
+
+    // =====================================================
+    // 会話履歴
+    // =====================================================
 
     const updatedHistory: ChatMessage[] = [
       ...chatHistory,
@@ -62,9 +100,15 @@ function App() {
 
     setChatHistory(updatedHistory);
 
+    // =====================================================
+    // 画面にユーザー発言＋AI待機を追加
+    // =====================================================
+
     setMessages((prev) => [
       ...prev,
+
       userMessage,
+
       {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -76,9 +120,10 @@ function App() {
     setLoading(true);
 
     try {
-      // =====================================================
-      // Cognito
-      // =====================================================
+      // ===================================================
+      // Cognito認証トークン取得
+      // ===================================================
+
       const session = await fetchAuthSession();
 
       const accessToken =
@@ -90,19 +135,24 @@ function App() {
         );
       }
 
-      // =====================================================
-      // AgentCore
-      // =====================================================
+      // ===================================================
+      // AgentCore Runtime API
+      // ===================================================
+
       const url =
         `https://bedrock-agentcore.ap-northeast-1.amazonaws.com/runtimes/` +
-        `${encodeURIComponent(AGENT_ARN)}/invocations?qualifier=DEFAULT`;
+        `${encodeURIComponent(
+          AGENT_ARN
+        )}/invocations?qualifier=DEFAULT`;
 
       const res = await fetch(url, {
         method: 'POST',
+
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
+
         body: JSON.stringify({
           prompt: userText,
           history: updatedHistory,
@@ -116,76 +166,122 @@ function App() {
       }
 
       if (!res.body) {
-        throw new Error('レスポンスボディがありません');
+        throw new Error(
+          'レスポンスボディがありません'
+        );
       }
 
-      // =====================================================
-      // SSE
-      // =====================================================
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+      // ===================================================
+      // SSEストリーミング
+      // ===================================================
+
+      const reader =
+        res.body.getReader();
+
+      const decoder =
+        new TextDecoder();
 
       let buffer = '';
+
       let isInToolUse = false;
+
       let toolIdx = -1;
 
       while (true) {
-        const { done, value } = await reader.read();
+        const {
+          done,
+          value,
+        } = await reader.read();
 
-        if (done) break;
+        if (done) {
+          break;
+        }
 
-        const decoded = decoder.decode(value, {
-          stream: true,
-        });
+        const decoded =
+          decoder.decode(value, {
+            stream: true,
+          });
 
-        for (const line of decoded.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
+        for (
+          const line of decoded.split('\n')
+        ) {
+          if (!line.startsWith('data: ')) {
+            continue;
+          }
 
-          const data = line.slice(6);
+          const data =
+            line.slice(6);
 
-          if (data === '[DONE]') continue;
+          if (data === '[DONE]') {
+            continue;
+          }
 
           let event;
 
           try {
             event = JSON.parse(data);
-          } catch {
+          } catch (error) {
+            console.error(
+              'SSE JSON parse error:',
+              error
+            );
+
             continue;
           }
 
           // =================================================
           // ツール使用開始
           // =================================================
-          if (event.type === 'tool_use') {
+
+          if (
+            event.type === 'tool_use'
+          ) {
             isInToolUse = true;
 
-            const savedBuffer = buffer;
+            const savedBuffer =
+              buffer;
 
             setMessages((prev) => {
               const msgs = [...prev];
 
               if (savedBuffer) {
-                msgs[msgs.length - 1] = {
-                  ...msgs[msgs.length - 1],
-                  content: savedBuffer,
+                msgs[
+                  msgs.length - 1
+                ] = {
+                  ...msgs[
+                    msgs.length - 1
+                  ],
+
+                  content:
+                    savedBuffer,
                 };
 
-                toolIdx = msgs.length;
+                toolIdx =
+                  msgs.length;
 
                 msgs.push({
                   id: crypto.randomUUID(),
                   role: 'assistant',
                   content: '',
                   isToolUsing: true,
-                  toolName: event.tool_name,
+                  toolName:
+                    event.tool_name,
                 });
               } else {
-                toolIdx = msgs.length - 1;
+                toolIdx =
+                  msgs.length - 1;
 
-                msgs[msgs.length - 1] = {
-                  ...msgs[msgs.length - 1],
+                msgs[
+                  msgs.length - 1
+                ] = {
+                  ...msgs[
+                    msgs.length - 1
+                  ],
+
                   isToolUsing: true,
-                  toolName: event.tool_name,
+
+                  toolName:
+                    event.tool_name,
                 };
               }
 
@@ -200,52 +296,85 @@ function App() {
           // =================================================
           // AIテキスト
           // =================================================
-          if (event.type === 'text' && event.data) {
-            if (isInToolUse && !buffer) {
-              const savedIdx = toolIdx;
+
+          if (
+            event.type === 'text' &&
+            event.data
+          ) {
+            if (
+              isInToolUse &&
+              !buffer
+            ) {
+              const savedIdx =
+                toolIdx;
 
               setMessages((prev) => {
                 const msgs = [...prev];
 
                 if (
                   savedIdx >= 0 &&
-                  savedIdx < msgs.length
+                  savedIdx <
+                    msgs.length
                 ) {
-                  msgs[savedIdx] = {
-                    ...msgs[savedIdx],
-                    toolCompleted: true,
+                  msgs[
+                    savedIdx
+                  ] = {
+                    ...msgs[
+                      savedIdx
+                    ],
+
+                    toolCompleted:
+                      true,
                   };
                 }
 
                 msgs.push({
                   id: crypto.randomUUID(),
                   role: 'assistant',
-                  content: event.data,
+                  content:
+                    event.data,
                 });
 
                 return msgs;
               });
 
-              buffer = event.data;
+              buffer =
+                event.data;
+
               isInToolUse = false;
+
               toolIdx = -1;
             } else {
-              buffer += event.data;
+              buffer +=
+                event.data;
 
-              const displayText = buffer
-                .replace(
-                  /<EXPENSE>[\s\S]*?<\/EXPENSE>/g,
-                  ''
-                )
-                .trim();
+              // =============================================
+              // EXPENSEタグを画面から隠す
+              // =============================================
+
+              const displayText =
+                buffer
+                  .replace(
+                    /<EXPENSE>[\s\S]*?<\/EXPENSE>/g,
+                    ''
+                  )
+                  .trim();
 
               setMessages((prev) => {
                 const msgs = [...prev];
 
-                msgs[msgs.length - 1] = {
-                  ...msgs[msgs.length - 1],
-                  content: displayText,
-                  isToolUsing: false,
+                msgs[
+                  msgs.length - 1
+                ] = {
+                  ...msgs[
+                    msgs.length - 1
+                  ],
+
+                  content:
+                    displayText,
+
+                  isToolUsing:
+                    false,
                 };
 
                 return msgs;
@@ -256,53 +385,70 @@ function App() {
       }
 
       // =====================================================
-      // 会話履歴
+      // AI回答を会話履歴へ追加
       // =====================================================
-      const cleanResponse = buffer
-        .replace(
-          /<EXPENSE>[\s\S]*?<\/EXPENSE>/g,
-          ''
-        )
-        .trim();
+
+      const cleanResponse =
+        buffer
+          .replace(
+            /<EXPENSE>[\s\S]*?<\/EXPENSE>/g,
+            ''
+          )
+          .trim();
 
       if (cleanResponse) {
         setChatHistory((prev) => [
           ...prev,
+
           {
             role: 'assistant',
-            content: cleanResponse,
+            content:
+              cleanResponse,
           },
         ]);
       }
 
       // =====================================================
-      // EXPENSEデータ取得
+      // EXPENSE取得
       // =====================================================
-      const expenseMatch = buffer.match(
-        /<EXPENSE>\s*(\{[\s\S]*?\})\s*<\/EXPENSE>/
-      );
+
+      const expenseMatch =
+        buffer.match(
+          /<EXPENSE>\s*(\{[\s\S]*?\})\s*<\/EXPENSE>/
+        );
 
       if (expenseMatch) {
         try {
-          const expense = JSON.parse(expenseMatch[1]);
+          const expense =
+            JSON.parse(
+              expenseMatch[1]
+            );
 
           // =================================================
-          // キャンセル処理
-          // amountは不要
+          // キャンセル
           // =================================================
-          if (expense.action === 'cancel_last') {
-            const gasResponse = await fetch(GAS_URL, {
-              method: 'POST',
 
-              headers: {
-                'Content-Type':
-                  'text/plain;charset=utf-8',
-              },
+          if (
+            expense.action ===
+            'cancel_last'
+          ) {
+            const gasResponse =
+              await fetch(
+                GAS_URL,
+                {
+                  method: 'POST',
 
-              body: JSON.stringify({
-                action: 'cancel_last',
-              }),
-            });
+                  headers: {
+                    'Content-Type':
+                      'text/plain;charset=utf-8',
+                  },
+
+                  body: JSON.stringify({
+                    action:
+                      'cancel_last',
+                  }),
+                }
+              );
 
             const gasResult =
               await gasResponse.json();
@@ -316,41 +462,50 @@ function App() {
           // =================================================
           // 通常登録
           // =================================================
-          else {
-            const amount = Number(
-              expense.amount
-            );
 
-            if (!Number.isFinite(amount)) {
+          else {
+            const amount =
+              Number(
+                expense.amount
+              );
+
+            if (
+              !Number.isFinite(
+                amount
+              )
+            ) {
               throw new Error(
                 `金額が数値ではありません: ${expense.amount}`
               );
             }
 
-            const gasResponse = await fetch(
-              GAS_URL,
-              {
-                method: 'POST',
+            const gasResponse =
+              await fetch(
+                GAS_URL,
+                {
+                  method: 'POST',
 
-                headers: {
-                  'Content-Type':
-                    'text/plain;charset=utf-8',
-                },
+                  headers: {
+                    'Content-Type':
+                      'text/plain;charset=utf-8',
+                  },
 
-                body: JSON.stringify({
-                  action:
-                    expense.action || 'add',
+                  body: JSON.stringify({
+                    action:
+                      expense.action ||
+                      'add',
 
-                  person:
-                    expense.person,
+                    person:
+                      expense.person,
 
-                  category:
-                    expense.category,
+                    category:
+                      expense.category,
 
-                  amount: amount,
-                }),
-              }
-            );
+                    amount:
+                      amount,
+                  }),
+                }
+              );
 
             const gasResult =
               await gasResponse.json();
@@ -360,7 +515,6 @@ function App() {
               gasResult
             );
           }
-
         } catch (error) {
           console.error(
             '家計簿登録・キャンセルエラー:',
@@ -369,25 +523,32 @@ function App() {
         }
       }
 
+      // =====================================================
+      // 「だじょ」
+      // =====================================================
 
-      // =====================================================
-      // だじょ
-      // =====================================================
       setMessages((prev) => {
         const msgs = [...prev];
 
         const last =
-          msgs[msgs.length - 1];
+          msgs[
+            msgs.length - 1
+          ];
 
         if (
           last &&
-          last.role === 'assistant' &&
+          last.role ===
+            'assistant' &&
           last.content
         ) {
-          msgs[msgs.length - 1] = {
+          msgs[
+            msgs.length - 1
+          ] = {
             ...last,
+
             content:
-              last.content + 'だじょ',
+              last.content +
+              'だじょ',
           };
         }
 
@@ -408,14 +569,20 @@ function App() {
         const msgs = [...prev];
 
         const last =
-          msgs[msgs.length - 1];
+          msgs[
+            msgs.length - 1
+          ];
 
         if (
           last &&
-          last.role === 'assistant'
+          last.role ===
+            'assistant'
         ) {
-          msgs[msgs.length - 1] = {
+          msgs[
+            msgs.length - 1
+          ] = {
             ...last,
+
             content:
               `AIとの通信に失敗したんだじょ\n\nエラー: ${errorMessage}`,
           };
@@ -428,9 +595,10 @@ function App() {
     }
   };
 
-  // =========================================================
+  // =======================================================
   // 通常入力
-  // =========================================================
+  // =======================================================
+
   const handleSubmit = async (
     e: FormEvent
   ) => {
@@ -439,62 +607,72 @@ function App() {
     await sendMessage(input);
   };
 
-  // =========================================================
-  // 選択肢クリック
-  // =========================================================
-  const handleSuggestionClick = (
-    command: string
-  ) => {
-    if (loading) return;
-
-    // クリックした内容を即送信
-    void sendMessage(command);
-  };
-
-  // =========================================================
+  // =======================================================
   // AI回答を描画
-  // =========================================================
+  // =======================================================
+
   const renderAssistantContent = (
     content: string
   ) => {
-    const lines = content.split('\n');
+    const lines =
+      content.split('\n');
 
-    return lines.map((line, index) => {
-      // -----------------------------------------------
-      // 「○○」という行をクリック可能なボタンにする
-      // Markdownの "- 「○○」" に対応
-      // -----------------------------------------------
-      const match = line.match(
-        /^\s*[-*]\s*「(.+)」\s*$/
-      );
+    return lines.map(
+      (line, index) => {
+        // =================================================
+        // 「○○」形式の選択肢
+        //
+        // - 「みどり、野菜1000円」
+        // - 「友介が洗剤を2980円買った」
+        // =================================================
 
-      if (match) {
-        const command = match[1];
+        const match =
+          line.match(
+            /^\s*[-*]\s*「(.+)」\s*$/
+          );
+
+        if (match) {
+          const command =
+            match[1].trim();
+
+          return (
+            <button
+              key={index}
+              type="button"
+              className="suggestion-button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // クリックした選択肢を即送信
+                void sendMessage(
+                  command
+                );
+              }}
+            >
+              {command}
+            </button>
+          );
+        }
+
+        // =================================================
+        // 通常のAIテキスト
+        // =================================================
 
         return (
-          <button
-            key={index}
-            type="button"
-            className="suggestion-button"
-            onClick={() =>
-              handleSuggestionClick(command)
-            }
-            disabled={loading}
-          >
-            {command}
-          </button>
+          <div key={index}>
+            <ReactMarkdown>
+              {line}
+            </ReactMarkdown>
+          </div>
         );
       }
-
-      return (
-        <div key={index}>
-          <ReactMarkdown>
-            {line}
-          </ReactMarkdown>
-        </div>
-      );
-    });
+    );
   };
+
+  // =======================================================
+  // UI
+  // =======================================================
 
   return (
     <div className="container">
@@ -518,80 +696,101 @@ function App() {
       >
         <div className="message-container">
 
-          {messages.map((msg) => (
-
-            <div
-              key={msg.id}
-              className={`message-row ${msg.role}`}
-            >
-
+          {messages.map(
+            (msg) => (
               <div
-                className={`bubble ${msg.role}`}
+                key={msg.id}
+                className={`message-row ${msg.role}`}
               >
 
-                {/* AI考え中 */}
-                {msg.role === 'assistant' &&
-                  !msg.content &&
-                  !msg.isToolUsing && (
-                    <span className="thinking">
-                      考え中…
+                <div
+                  className={`bubble ${msg.role}`}
+                >
+
+                  {/* =======================================
+                      AI考え中
+                  ======================================= */}
+
+                  {msg.role ===
+                    'assistant' &&
+                    !msg.content &&
+                    !msg.isToolUsing && (
+                      <span className="thinking">
+                        考え中…
+                      </span>
+                    )}
+
+                  {/* =======================================
+                      ツール使用中
+                  ======================================= */}
+
+                  {msg.isToolUsing && (
+                    <span
+                      className={`tool-status ${
+                        msg.toolCompleted
+                          ? 'completed'
+                          : 'active'
+                      }`}
+                    >
+                      {msg.toolCompleted
+                        ? '✓'
+                        : '⏳'}{' '}
+
+                      {msg.toolName}
+
+                      {msg.toolCompleted
+                        ? 'ツールを利用しました'
+                        : 'ツールを利用中...'}
                     </span>
                   )}
 
-                {/* ツール使用 */}
-                {msg.isToolUsing && (
-                  <span
-                    className={`tool-status ${
-                      msg.toolCompleted
-                        ? 'completed'
-                        : 'active'
-                    }`}
-                  >
-                    {msg.toolCompleted
-                      ? '✓'
-                      : '⏳'}{' '}
+                  {/* =======================================
+                      AI回答
+                  ======================================= */}
 
-                    {msg.toolName}
+                  {msg.content &&
+                    !msg.isToolUsing && (
+                      <div className="assistant-content">
+                        {renderAssistantContent(
+                          msg.content
+                        )}
+                      </div>
+                    )}
 
-                    {msg.toolCompleted
-                      ? 'ツールを利用しました'
-                      : 'ツールを利用中...'}
-                  </span>
-                )}
-
-                {/* AI回答 */}
-                {msg.content &&
-                  !msg.isToolUsing && (
-                    <div className="assistant-content">
-                      {renderAssistantContent(
-                        msg.content
-                      )}
-                    </div>
-                  )}
+                </div>
 
               </div>
+            )
+          )}
 
-            </div>
-
-          ))}
-
-          <div ref={messagesEndRef} />
+          <div
+            ref={
+              messagesEndRef
+            }
+          />
 
         </div>
       </div>
 
-      {/* 入力 */}
+      {/* ===================================================
+          入力フォーム
+      =================================================== */}
+
       <div className="form-wrapper">
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={
+            handleSubmit
+          }
           className="form"
         >
 
           <input
             value={input}
             onChange={(e) =>
-              setInput(e.target.value)
+              setInput(
+                e.target.value
+              )
             }
             placeholder="メッセージを入力..."
             disabled={loading}
