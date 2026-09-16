@@ -5,7 +5,6 @@ import './App.css';
 
 import outputs from '../amplify_outputs.json';
 
-// Amplify outputs から設定を取得
 const AGENT_ARN = outputs.custom?.agentRuntimeArn;
 
 const GAS_URL =
@@ -40,7 +39,7 @@ function App() {
   }, [messages]);
 
   // =========================================================
-  // AgentCoreへメッセージを送信
+  // AgentCoreへ送信
   // =========================================================
   const sendMessage = async (text: string) => {
     const userText = text.trim();
@@ -53,9 +52,6 @@ function App() {
       content: userText,
     };
 
-    // =======================================================
-    // 会話履歴を更新
-    // =======================================================
     const updatedHistory: ChatMessage[] = [
       ...chatHistory,
       {
@@ -66,9 +62,6 @@ function App() {
 
     setChatHistory(updatedHistory);
 
-    // =======================================================
-    // 画面にユーザー発言＋AI待機を追加
-    // =======================================================
     setMessages((prev) => [
       ...prev,
       userMessage,
@@ -84,7 +77,7 @@ function App() {
 
     try {
       // =====================================================
-      // Cognito認証トークン取得
+      // Cognito
       // =====================================================
       const session = await fetchAuthSession();
 
@@ -98,7 +91,7 @@ function App() {
       }
 
       // =====================================================
-      // AgentCore Runtime API
+      // AgentCore
       // =====================================================
       const url =
         `https://bedrock-agentcore.ap-northeast-1.amazonaws.com/runtimes/` +
@@ -106,12 +99,10 @@ function App() {
 
       const res = await fetch(url, {
         method: 'POST',
-
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-
         body: JSON.stringify({
           prompt: userText,
           history: updatedHistory,
@@ -125,19 +116,16 @@ function App() {
       }
 
       if (!res.body) {
-        throw new Error(
-          'レスポンスボディがありません'
-        );
+        throw new Error('レスポンスボディがありません');
       }
 
       // =====================================================
-      // SSEストリーミング処理
+      // SSE
       // =====================================================
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
 
       let buffer = '';
-
       let isInToolUse = false;
       let toolIdx = -1;
 
@@ -161,11 +149,7 @@ function App() {
 
           try {
             event = JSON.parse(data);
-          } catch (error) {
-            console.error(
-              'SSE JSON parse error:',
-              error
-            );
+          } catch {
             continue;
           }
 
@@ -216,14 +200,8 @@ function App() {
           // =================================================
           // AIテキスト
           // =================================================
-          if (
-            event.type === 'text' &&
-            event.data
-          ) {
-            if (
-              isInToolUse &&
-              !buffer
-            ) {
+          if (event.type === 'text' && event.data) {
+            if (isInToolUse && !buffer) {
               const savedIdx = toolIdx;
 
               setMessages((prev) => {
@@ -249,15 +227,11 @@ function App() {
               });
 
               buffer = event.data;
-
               isInToolUse = false;
               toolIdx = -1;
             } else {
               buffer += event.data;
 
-              // =================================================
-              // EXPENSEタグを画面から隠す
-              // =================================================
               const displayText = buffer
                 .replace(
                   /<EXPENSE>[\s\S]*?<\/EXPENSE>/g,
@@ -282,7 +256,7 @@ function App() {
       }
 
       // =====================================================
-      // AIの回答を会話履歴に追加
+      // 会話履歴
       // =====================================================
       const cleanResponse = buffer
         .replace(
@@ -302,7 +276,7 @@ function App() {
       }
 
       // =====================================================
-      // EXPENSEデータ取得
+      // EXPENSE
       // =====================================================
       const expenseMatch = buffer.match(
         /<EXPENSE>\s*(\{[\s\S]*?\})\s*<\/EXPENSE>/
@@ -314,29 +288,21 @@ function App() {
             expenseMatch[1]
           );
 
-          // =================================================
-          // GASへ送信
-          // =================================================
           const gasResponse = await fetch(
             GAS_URL,
             {
               method: 'POST',
-
               headers: {
                 'Content-Type':
                   'text/plain;charset=utf-8',
               },
-
               body: JSON.stringify({
                 action:
                   expense.action || 'add',
-
                 person:
                   expense.person,
-
                 category:
                   expense.category,
-
                 amount:
                   expense.amount,
               }),
@@ -359,7 +325,7 @@ function App() {
       }
 
       // =====================================================
-      // 「だじょ」を付ける
+      // だじょ
       // =====================================================
       setMessages((prev) => {
         const msgs = [...prev];
@@ -404,7 +370,6 @@ function App() {
         ) {
           msgs[msgs.length - 1] = {
             ...last,
-
             content:
               `AIとの通信に失敗したんだじょ\n\nエラー: ${errorMessage}`,
           };
@@ -418,7 +383,7 @@ function App() {
   };
 
   // =========================================================
-  // 通常の送信ボタン
+  // 通常入力
   // =========================================================
   const handleSubmit = async (
     e: FormEvent
@@ -431,12 +396,58 @@ function App() {
   // =========================================================
   // 選択肢クリック
   // =========================================================
-  const handleSuggestionClick = async (
+  const handleSuggestionClick = (
     command: string
   ) => {
     if (loading) return;
 
-    await sendMessage(command);
+    // クリックした内容を即送信
+    void sendMessage(command);
+  };
+
+  // =========================================================
+  // AI回答を描画
+  // =========================================================
+  const renderAssistantContent = (
+    content: string
+  ) => {
+    const lines = content.split('\n');
+
+    return lines.map((line, index) => {
+      // -----------------------------------------------
+      // 「○○」という行をクリック可能なボタンにする
+      // Markdownの "- 「○○」" に対応
+      // -----------------------------------------------
+      const match = line.match(
+        /^\s*[-*]\s*「(.+)」\s*$/
+      );
+
+      if (match) {
+        const command = match[1];
+
+        return (
+          <button
+            key={index}
+            type="button"
+            className="suggestion-button"
+            onClick={() =>
+              handleSuggestionClick(command)
+            }
+            disabled={loading}
+          >
+            {command}
+          </button>
+        );
+      }
+
+      return (
+        <div key={index}>
+          <ReactMarkdown>
+            {line}
+          </ReactMarkdown>
+        </div>
+      );
+    });
   };
 
   return (
@@ -472,9 +483,7 @@ function App() {
                 className={`bubble ${msg.role}`}
               >
 
-                {/* =========================================
-                    AI考え中
-                ========================================= */}
+                {/* AI考え中 */}
                 {msg.role === 'assistant' &&
                   !msg.content &&
                   !msg.isToolUsing && (
@@ -483,9 +492,7 @@ function App() {
                     </span>
                   )}
 
-                {/* =========================================
-                    ツール使用中
-                ========================================= */}
+                {/* ツール使用 */}
                 {msg.isToolUsing && (
                   <span
                     className={`tool-status ${
@@ -506,67 +513,14 @@ function App() {
                   </span>
                 )}
 
-                {/* =========================================
-                    AI回答
-                ========================================= */}
+                {/* AI回答 */}
                 {msg.content &&
                   !msg.isToolUsing && (
-
-                    <ReactMarkdown
-                      components={{
-
-                        // -----------------------------------
-                        // Markdownの箇条書きをカスタマイズ
-                        // -----------------------------------
-                        li({
-                          children,
-                        }) {
-                          const text =
-                            String(children)
-                              .trim();
-
-                          // 「○○」だけの箇条書きなら
-                          // クリックボタンにする
-                          if (
-                            text.startsWith('「') &&
-                            text.endsWith('」')
-                          ) {
-                            const command =
-                              text.slice(
-                                1,
-                                -1
-                              );
-
-                            return (
-                              <li
-                                className="suggestion-list-item"
-                              >
-                                <button
-                                  type="button"
-                                  className="suggestion-button"
-                                  onClick={() =>
-                                    handleSuggestionClick(
-                                      command
-                                    )
-                                  }
-                                  disabled={loading}
-                                >
-                                  {command}
-                                </button>
-                              </li>
-                            );
-                          }
-
-                          return (
-                            <li>
-                              {children}
-                            </li>
-                          );
-                        },
-                      }}
-                    >
-                      {msg.content}
-                    </ReactMarkdown>
+                    <div className="assistant-content">
+                      {renderAssistantContent(
+                        msg.content
+                      )}
+                    </div>
                   )}
 
               </div>
@@ -575,16 +529,12 @@ function App() {
 
           ))}
 
-          <div
-            ref={messagesEndRef}
-          />
+          <div ref={messagesEndRef} />
 
         </div>
       </div>
 
-      {/* ===============================================
-          入力フォーム
-      =============================================== */}
+      {/* 入力 */}
       <div className="form-wrapper">
 
         <form
