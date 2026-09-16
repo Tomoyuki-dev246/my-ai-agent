@@ -276,7 +276,7 @@ function App() {
       }
 
       // =====================================================
-      // EXPENSE
+      // EXPENSEデータ取得
       // =====================================================
       const expenseMatch = buffer.match(
         /<EXPENSE>\s*(\{[\s\S]*?\})\s*<\/EXPENSE>/
@@ -286,32 +286,81 @@ function App() {
         try {
           const expense = JSON.parse(expenseMatch[1]);
 
-          const amount = Number(expense.amount);
+          // =================================================
+          // キャンセル処理
+          // amountは不要
+          // =================================================
+          if (expense.action === 'cancel_last') {
+            const gasResponse = await fetch(GAS_URL, {
+              method: 'POST',
 
-          if (!Number.isFinite(amount)) {
-            throw new Error(
-              `金額が数値ではありません: ${expense.amount}`
+              headers: {
+                'Content-Type':
+                  'text/plain;charset=utf-8',
+              },
+
+              body: JSON.stringify({
+                action: 'cancel_last',
+              }),
+            });
+
+            const gasResult =
+              await gasResponse.json();
+
+            console.log(
+              'GAS cancel response:',
+              gasResult
             );
           }
 
-          const gasResponse = await fetch(GAS_URL, {
-            method: 'POST',
+          // =================================================
+          // 通常登録
+          // =================================================
+          else {
+            const amount = Number(
+              expense.amount
+            );
 
-            headers: {
-              'Content-Type': 'text/plain;charset=utf-8',
-            },
+            if (!Number.isFinite(amount)) {
+              throw new Error(
+                `金額が数値ではありません: ${expense.amount}`
+              );
+            }
 
-            body: JSON.stringify({
-              action: expense.action || 'add',
-              person: expense.person,
-              category: expense.category,
-              amount: amount,
-            }),
-          });
+            const gasResponse = await fetch(
+              GAS_URL,
+              {
+                method: 'POST',
 
-          const gasResult = await gasResponse.json();
+                headers: {
+                  'Content-Type':
+                    'text/plain;charset=utf-8',
+                },
 
-          console.log('GAS response:', gasResult);
+                body: JSON.stringify({
+                  action:
+                    expense.action || 'add',
+
+                  person:
+                    expense.person,
+
+                  category:
+                    expense.category,
+
+                  amount: amount,
+                }),
+              }
+            );
+
+            const gasResult =
+              await gasResponse.json();
+
+            console.log(
+              'GAS add response:',
+              gasResult
+            );
+          }
+
         } catch (error) {
           console.error(
             '家計簿登録・キャンセルエラー:',
@@ -319,6 +368,7 @@ function App() {
           );
         }
       }
+
 
       // =====================================================
       // だじょ
