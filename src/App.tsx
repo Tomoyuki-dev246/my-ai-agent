@@ -284,38 +284,34 @@ function App() {
 
       if (expenseMatch) {
         try {
-          const expense = JSON.parse(
-            expenseMatch[1]
-          );
+          const expense = JSON.parse(expenseMatch[1]);
 
-          const gasResponse = await fetch(
-            GAS_URL,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type':
-                  'text/plain;charset=utf-8',
-              },
-              body: JSON.stringify({
-                action:
-                  expense.action || 'add',
-                person:
-                  expense.person,
-                category:
-                  expense.category,
-                amount:
-                  expense.amount,
-              }),
-            }
-          );
+          const amount = Number(expense.amount);
 
-          const gasResult =
-            await gasResponse.json();
+          if (!Number.isFinite(amount)) {
+            throw new Error(
+              `金額が数値ではありません: ${expense.amount}`
+            );
+          }
 
-          console.log(
-            'GAS response:',
-            gasResult
-          );
+          const gasResponse = await fetch(GAS_URL, {
+            method: 'POST',
+
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8',
+            },
+
+            body: JSON.stringify({
+              action: expense.action || 'add',
+              person: expense.person,
+              category: expense.category,
+              amount: amount,
+            }),
+          });
+
+          const gasResult = await gasResponse.json();
+
+          console.log('GAS response:', gasResult);
         } catch (error) {
           console.error(
             '家計簿登録・キャンセルエラー:',
