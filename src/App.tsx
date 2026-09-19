@@ -522,38 +522,6 @@ function App() {
           );
         }
       }
-
-      // =====================================================
-      // 「だじょ」
-      // =====================================================
-
-      setMessages((prev) => {
-        const msgs = [...prev];
-
-        const last =
-          msgs[
-            msgs.length - 1
-          ];
-
-        if (
-          last &&
-          last.role ===
-            'assistant' &&
-          last.content
-        ) {
-          msgs[
-            msgs.length - 1
-          ] = {
-            ...last,
-
-            content:
-              last.content +
-              'だじょ',
-          };
-        }
-
-        return msgs;
-      });
     } catch (error) {
       console.error(
         'AIチャットエラー:',
