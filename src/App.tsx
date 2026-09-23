@@ -773,9 +773,15 @@ function App() {
             }
             className="button"
           >
-            {loading
-              ? '⌛️'
-              : '送信'}
+          {loading ? (
+            '⌛️'
+          ) : (
+            <img
+              src="/send-icon.png"
+              alt="送信"
+              className="send-icon"
+            />
+          )}
           </button>
 
         </form>
