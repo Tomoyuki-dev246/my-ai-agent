@@ -259,7 +259,7 @@
   }
 
   .form-wrapper {
-    padding: 11px;
+    padding: 12px;
   }
 
   .form {
@@ -268,7 +268,7 @@
 
   .input {
     padding: 11px 14px;
-    font-size: 0.855rem;
+    font-size: 16px;
     border-radius: 11px;
   }
 
