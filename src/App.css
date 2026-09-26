@@ -227,7 +227,61 @@
 ========================================= */
 
 @media (max-width: 600px) {
+  .header {
+    padding: 7px 12px;
+  }
+
+  .title {
+    font-size: 1.125rem;
+  }
+
+  .subtitle {
+    font-size: 0.765rem;
+    margin: 3px 0 0;
+  }
+
+  .message-area {
+    padding: 4px 12px;
+  }
+
+  .message-area.empty {
+    padding: 4px 12px;
+  }
+
+  .bubble {
+    padding: 11px 14px;
+    border-radius: 14px;
+    font-size: 0.855rem;
+  }
+
+  .message-row {
+    margin-bottom: 10px;
+  }
+
   .form-wrapper {
-    padding: 12px;
+    padding: 11px;
+  }
+
+  .form {
+    gap: 10px;
+  }
+
+  .input {
+    padding: 11px 14px;
+    font-size: 0.855rem;
+    border-radius: 11px;
+  }
+
+  .button {
+    padding: 9px 14px;
+    font-size: 0.855rem;
+    border-radius: 11px;
+  }
+
+  .suggestion-button {
+    margin: 9px 0;
+    padding: 11px 14px;
+    font-size: 13.5px;
+    border-radius: 9px;
   }
 }
