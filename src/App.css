@@ -224,64 +224,78 @@
 
 /* =========================================
    スマホ対応
+   PCは変更なし
 ========================================= */
 
 @media (max-width: 600px) {
+  /* タイトル部分 */
   .header {
     padding: 6px 10px;
   }
 
   .title {
-    font-size: 1rem;
+    font-size: 1.125rem;
   }
 
   .subtitle {
-    font-size: 0.69rem;
-    margin: 2px 0 0;
+    font-size: 0.765rem;
+    margin: 3px 0 0;
   }
 
+  /* メッセージエリア */
   .message-area {
-    padding: 3px 10px;
+    padding: 4px 10px;
   }
 
   .message-area.empty {
-    padding: 3px 10px;
+    padding: 4px 10px;
   }
 
-  .bubble {
-    padding: 10px 12px;
-    border-radius: 13px;
-    font-size: 0.77rem;
+  .message-container {
+    max-width: 100%;
   }
 
+  /* メッセージ */
   .message-row {
     margin-bottom: 9px;
   }
 
+  .bubble {
+    max-width: 80%;
+    padding: 10px 13px;
+    border-radius: 14px;
+    font-size: 0.855rem;
+    line-height: 1.4;
+  }
+
+  /* 入力エリア */
   .form-wrapper {
     padding: 10px;
   }
 
   .form {
     gap: 9px;
+    max-width: 100%;
   }
 
   .input {
-    padding: 10px 12px;
+    padding: 10px 13px;
     font-size: 16px;
     border-radius: 10px;
   }
 
   .button {
     padding: 8px 12px;
-    font-size: 0.77rem;
+    font-size: 0.855rem;
     border-radius: 10px;
   }
 
+  /* AIの選択肢 */
   .suggestion-button {
     margin: 8px 0;
-    padding: 10px 12px;
-    font-size: 12px;
-    border-radius: 8px;
+    padding: 10px 13px;
+    font-size: 13.5px;
+    line-height: 1.35;
+    border-radius: 9px;
   }
 }
