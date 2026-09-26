@@ -1,7 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap');
 
+/* =========================================
+   基本設定
+========================================= */
+
 * {
   font-family: 'Zen Maru Gothic', sans-serif;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
 }
 
 /* =========================================
@@ -14,7 +27,6 @@
   text-align: center;
   padding: 8px 24px;
   box-shadow: 0 2px 8px rgba(236, 111, 158, 0.3);
-  box-sizing: border-box;
 }
 
 .title {
@@ -53,8 +65,6 @@
   flex-direction: column;
 }
 
-/* メッセージがまだないときは空白を詰める */
-
 .message-area.empty {
   flex: 0;
   padding: 4px 24px;
@@ -64,6 +74,7 @@
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+  min-width: 0;
 }
 
 /* =========================================
@@ -73,6 +84,7 @@
 .message-row {
   display: flex;
   margin-bottom: 12px;
+  min-width: 0;
 }
 
 .message-row.user {
@@ -93,7 +105,8 @@
   border-radius: 16px;
   line-height: 1.5;
   font-size: 0.95rem;
-  box-sizing: border-box;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .bubble.user {
@@ -110,6 +123,15 @@
 }
 
 /* =========================================
+   AI回答
+========================================= */
+
+.assistant-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* =========================================
    思考中・ツール使用中
 ========================================= */
 
@@ -123,6 +145,8 @@
   align-items: center;
   gap: 6px;
   font-weight: 500;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .tool-status.active {
@@ -141,7 +165,6 @@
   background: white;
   border-top: 1px solid #f3d5df;
   padding: 16px 24px;
-  box-sizing: border-box;
 }
 
 .form {
@@ -150,17 +173,17 @@
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  box-sizing: border-box;
+  min-width: 0;
 }
 
 .input {
   flex: 1;
+  min-width: 0;
   padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid #efc5d3;
   font-size: 0.95rem;
   outline: none;
-  box-sizing: border-box;
 }
 
 .input:focus {
@@ -169,6 +192,7 @@
 }
 
 .button {
+  flex-shrink: 0;
   padding: 10px 15px;
   border-radius: 12px;
   background: linear-gradient(135deg, #f48fb1 0%, #ec6f9e 100%);
@@ -208,7 +232,6 @@
   font-weight: 500;
   text-align: left;
   cursor: pointer;
-  box-sizing: border-box;
   transition:
     background-color 0.15s ease,
     transform 0.1s ease;
@@ -230,6 +253,7 @@
 
 @media (max-width: 600px) {
   /* タイトル部分 */
+
   .header {
     padding: 6px 10px;
   }
@@ -244,6 +268,7 @@
   }
 
   /* メッセージエリア */
+
   .message-area {
     padding: 4px 6px;
   }
@@ -254,11 +279,14 @@
 
   .message-container {
     max-width: 100%;
+    min-width: 0;
   }
 
   /* メッセージ */
+
   .message-row {
     margin-bottom: 9px;
+    min-width: 0;
   }
 
   .bubble {
@@ -270,6 +298,7 @@
   }
 
   /* 入力エリア */
+
   .form-wrapper {
     padding: 10px;
   }
@@ -280,18 +309,21 @@
   }
 
   .input {
+    min-width: 0;
     padding: 10px 13px;
     font-size: 16px;
     border-radius: 10px;
   }
 
   .button {
+    flex-shrink: 0;
     padding: 8px 12px;
     font-size: 0.855rem;
     border-radius: 10px;
   }
 
   /* AIの選択肢 */
+
   .suggestion-button {
     margin: 8px 0;
     padding: 10px 13px;
