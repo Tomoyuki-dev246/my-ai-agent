@@ -582,27 +582,30 @@ function App() {
   const renderAssistantContent = (
     content: string
   ) => {
-    const lines =
-      content.split('\n');
+    const lines = content.split('\n');
 
-    return lines.map(
-      (line, index) => {
-        // =================================================
-        // 「○○」形式の選択肢
-        //
-        // - 「みどり、野菜1000円」
-        // - 「友介が洗剤を2980円買った」
-        // =================================================
+    return lines.map((line, index) => {
+      // =================================================
+      // AIが提示した選択肢
+      //
+      // 対応例：
+      // - 「みどり、野菜1000円」
+      // - みどり、野菜1000円
+      // * 「友介、洗剤2980円」
+      // 1. みどり、野菜1000円
+      // 2) 友介、洗剤2980円
+      // =================================================
 
-        const match =
-          line.match(
-            /^\s*[-*]\s*「(.+)」\s*$/
-          );
+      const choiceMatch = line.match(
+        /^\s*(?:[-*•]|(?:\d+[\.\)]|[①②③④⑤⑥⑦⑧⑨⑩]))\s*(?:「(.+)」|(.+?))\s*$/
+      );
 
-        if (match) {
-          const command =
-            match[1].trim();
+      if (choiceMatch) {
+        const command = (
+          choiceMatch[1] ?? choiceMatch[2]
+        ).trim();
 
+        if (command) {
           return (
             <button
               key={index}
@@ -612,30 +615,28 @@ function App() {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // クリックした選択肢を即送信
-                void sendMessage(
-                  command
-                );
+                // 選択肢そのものをエージェントへの回答として送信
+                void sendMessage(command);
               }}
             >
               {command}
             </button>
           );
         }
-
-        // =================================================
-        // 通常のAIテキスト
-        // =================================================
-
-        return (
-          <div key={index}>
-            <ReactMarkdown>
-              {line}
-            </ReactMarkdown>
-          </div>
-        );
       }
-    );
+
+      // =================================================
+      // 通常のAIテキスト
+      // =================================================
+
+      return (
+        <div key={index}>
+          <ReactMarkdown>
+            {line}
+          </ReactMarkdown>
+        </div>
+      );
+    });
   };
 
   // =======================================================
